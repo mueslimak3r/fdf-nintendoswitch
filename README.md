@@ -22,3 +22,8 @@ Atmosphere (see the Kosmos github for pre assembled releases)
 hbmenu NSP installed for full access to system resources
 
 mtp-server-nx (for usb file transfer)
+
+# helpful links
+
+keybind info for SDL2 on switch:
+    https://github.com/devkitPro/SDL/blob/switch-sdl2/src/joystick/switch/SDL_sysjoystick.c#L52
