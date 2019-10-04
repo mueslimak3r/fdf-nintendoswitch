@@ -2,8 +2,9 @@
 Nintendo Switch port of my 42 wireframe graphics project
 
 
-# to add
-I still need to port over the map opening system. My plan is to scan a defined directory "fdf_maps" and make an array of maps that can be toggled between.
+# how to use
+
+put the fdf_maps folder in the same folder as the .nro file
 
 # PC dependencies
 

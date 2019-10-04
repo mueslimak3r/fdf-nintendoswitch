@@ -17,6 +17,11 @@
 # include <math.h>
 # include <fcntl.h>
 # include <limits.h>
+# include <string.h>
+# include <stdio.h>
+#include <fstream>
+#include <iostream>
+//#include <iomanip>
 
 # define WHITE ((int)16777215)
 # define SCALE ((double)-0.12)
@@ -41,6 +46,7 @@ typedef struct	s_map
 typedef struct	s_mlx_stuff
 {
 	t_map		map;
+	t_vox		rot_offset;
 	double		scale;
 	int			w;
 	int			h;
@@ -55,15 +61,7 @@ typedef struct s_RGB
         double b;
 } t_RGB;
 
-t_vox			g_rot_offset;
-t_mlx_stuff		g_stuff;
-
-int				create_map(t_map *map, char *mname);
-void			update_window(void);
-int				errorfunc(char *note, int v);
+int			create_map(t_mlx_stuff *stuff, std::string name);
 void			map_destroy(t_map *map);
-void			draw_line(t_vox a, t_vox b);
-void			update_window(void);
-t_vox			mlx_project(t_vox p);
 
 #endif
