@@ -146,20 +146,12 @@ void    init_mlx_stuff(t_mlx_stuff *stuff, int h, int w)
    
 }
 
-int main(int argc, char *argv[])
+void fdf_init(t_mlx_stuff *stuff, SDL_Surface **surface, SDL_Texture **texture, SDL_Window **window, SDL_Renderer **renderer)
 {
-    SDL_Event       event;
-    SDL_Surface     *surface;
-    SDL_Texture     *texture;
-    SDL_Window      *window;
-    SDL_Renderer    *renderer;
-    t_mlx_stuff     stuff;
 
-    int done = 0, w = 1280, h = 720;
-    // mandatory at least on switch, else gfx is not properly closed
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
         SDL_Log("SDL_Init: %s\n", SDL_GetError());
-        return -1;
+        exit (-1);
     }
 
     // create an SDL window (OpenGL ES2 always enabled)
@@ -167,41 +159,41 @@ int main(int argc, char *argv[])
     // available switch SDL2 video modes :
     // 1920 x 1080 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888)
     // 1280 x 720 @ 32 bpp (SDL_PIXELFORMAT_RGBA8888)
-    window = SDL_CreateWindow("sdl2_gles2", 0, 0, 1280, 720, 0);
-    if (!window) {
+    *window = SDL_CreateWindow("sdl2_gles2", 0, 0, 1280, 720, 0);
+    if (!*window) {
         SDL_Log("SDL_CreateWindow: %s\n", SDL_GetError());
         SDL_Quit();
-        return -1;
+        exit (-1);
     }
 
     // create a renderer (OpenGL ES2)
-    renderer = SDL_CreateRenderer(window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    if (!renderer) {
+    *renderer = SDL_CreateRenderer(*window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (!*renderer) {
         SDL_Log("SDL_CreateRenderer: %s\n", SDL_GetError());
-        SDL_DestroyWindow(window);
+        SDL_DestroyWindow(*window);
         SDL_Quit();
-        return -1;
+        exit (-1);
     }
 
-    surface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
-    if (!surface)
+    *surface = SDL_CreateRGBSurface(0, 1280, 720, 32, 0, 0, 0, 0);
+    if (!*surface)
     {
         SDL_Log("SDL_CreateRGBSurface: %s\n", SDL_GetError());
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
+        SDL_DestroyRenderer(*renderer);
+        SDL_DestroyWindow(*window);
         SDL_Quit();
-        return (0);
+        exit (-1);
     }
 
-    texture = SDL_CreateTextureFromSurface(renderer, surface);
-    if (!texture)
+    *texture = SDL_CreateTextureFromSurface(*renderer, *surface);
+    if (!*texture)
     {
         SDL_Log("SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
-        SDL_FreeSurface(surface);
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
+        SDL_FreeSurface(*surface);
+        SDL_DestroyRenderer(*renderer);
+        SDL_DestroyWindow(*window);
         SDL_Quit();
-        return (0);
+        exit (-1);
     }
     // open CONTROLLER_PLAYER_1 and CONTROLLER_PLAYER_2
     // when railed, both joycons are mapped to joystick #0,
@@ -210,16 +202,30 @@ int main(int argc, char *argv[])
     for (int i = 0; i < 2; i++) {
         if (SDL_JoystickOpen(i) == NULL) {
             SDL_Log("SDL_JoystickOpen: %s\n", SDL_GetError());
-            SDL_DestroyTexture(texture);
-            SDL_FreeSurface(surface);
-            SDL_DestroyRenderer(renderer);
-            SDL_DestroyWindow(window);
+            SDL_DestroyTexture(*texture);
+            SDL_FreeSurface(*surface);
+            SDL_DestroyRenderer(*renderer);
+            SDL_DestroyWindow(*window);
             SDL_Quit();
-            return -1;
+            exit (-1);
         }
     }
+    init_mlx_stuff(stuff, 720, 1280);
+}
+
+int main(int argc, char *argv[])
+{
+    SDL_Event       event;
+    SDL_Surface     *surface = nullptr;
+    SDL_Texture     *texture = nullptr;
+    SDL_Window      *window = nullptr;
+    SDL_Renderer    *renderer = nullptr;
+    t_mlx_stuff     stuff;
+
+    int done = 0, w = 1280, h = 720;
+    // mandatory at least on switch, else gfx is not properly closed
+    fdf_init(&stuff, &surface, &texture, &window, &renderer);
     int chosen_map = 0;
-    init_mlx_stuff(&stuff, h, w);
     if (!(get_map(&stuff, chosen_map)))
         done = 1;
     t_map *map = &stuff.map;
