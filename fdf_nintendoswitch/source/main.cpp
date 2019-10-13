@@ -178,6 +178,7 @@ int main(int argc, char *argv[])
     renderer = SDL_CreateRenderer(window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (!renderer) {
         SDL_Log("SDL_CreateRenderer: %s\n", SDL_GetError());
+        SDL_DestroyWindow(window);
         SDL_Quit();
         return -1;
     }
@@ -186,6 +187,8 @@ int main(int argc, char *argv[])
     if (!surface)
     {
         SDL_Log("SDL_CreateRGBSurface: %s\n", SDL_GetError());
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
         SDL_Quit();
         return (0);
     }
@@ -194,6 +197,9 @@ int main(int argc, char *argv[])
     if (!texture)
     {
         SDL_Log("SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
+        SDL_FreeSurface(surface);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
         SDL_Quit();
         return (0);
     }
@@ -204,6 +210,10 @@ int main(int argc, char *argv[])
     for (int i = 0; i < 2; i++) {
         if (SDL_JoystickOpen(i) == NULL) {
             SDL_Log("SDL_JoystickOpen: %s\n", SDL_GetError());
+            SDL_DestroyTexture(texture);
+            SDL_FreeSurface(surface);
+            SDL_DestroyRenderer(renderer);
+            SDL_DestroyWindow(window);
             SDL_Quit();
             return -1;
         }
@@ -287,10 +297,8 @@ int main(int argc, char *argv[])
                             {
                                 if (stuff.map.v)
                                     free(stuff.map.v);
-                                SDL_FreeSurface(surface);
-                                surface = nullptr;
                                 SDL_DestroyTexture(texture);
-                                texture = nullptr;
+                                SDL_FreeSurface(surface);
                                 SDL_DestroyRenderer(renderer);
                                 SDL_DestroyWindow(window);
                                 SDL_Quit();
@@ -361,12 +369,9 @@ int main(int argc, char *argv[])
     if (stuff.map.v)
         free(stuff.map.v);
     SDL_DestroyTexture(texture);
-    texture = nullptr;
     SDL_FreeSurface(surface);
-    surface = nullptr;
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
-
     return 0;
 }
