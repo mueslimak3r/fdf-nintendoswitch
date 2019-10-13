@@ -6,39 +6,6 @@
 #define MAP_NB 15
 
 #include "fdf.h"
-/*
-void	map_ft(void)
-{
-	t_map *map;
-
-	map = &stuff.map;
-	int fourtytwo[19 * 11] = {	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-								0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-								0, 0, 10, 10, 0, 0, 10, 10, 0, 0, 0, 10, 10, 10, 10, 10, 0, 0, 0,
-								0, 0, 10, 10, 0, 0, 10, 10, 0, 0, 0, 0, 0, 0, 0, 10, 10, 0, 0,
-								0, 0, 10, 10, 0, 0, 10, 10, 0, 0, 0, 0, 0, 0, 0, 10, 10, 0, 0,
-								0, 0, 10, 10, 10, 10, 10, 10, 0, 0, 0, 0, 10, 10, 10, 10, 0, 0, 0,
-								0, 0, 0, 10, 10, 10, 10, 10, 0, 0, 0, 10, 10, 0, 0, 0, 0, 0, 0,
-								0, 0, 0, 0, 0, 0, 10, 10, 0, 0, 0, 10, 10, 0, 0, 0, 0, 0, 0,
-								0, 0, 0, 0, 0, 0, 10, 10, 0, 0, 0, 10, 10, 10, 10, 10, 10, 0, 0,
-								0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-								0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-	map->rows = 11;
-	map->col = 19;
-	map->v = (t_vox*)malloc(sizeof(t_vox) * map->rows * map->col);
-	for (int y = 0; y < 11; y++)
-	{
-		for (int x = 0; x < 19; x++)
-		{
-            t_vox *v = map->v + (19 * y + x);
-			v->x = x;
-			v->y = y;
-			v->z = fourtytwo[19 * y + x];
-            v->c = 2248959 + ((long)v->z * 50);
-		}
-	}
-}
-*/
 
 int         get_map(t_mlx_stuff *stuff, int nb)
 {
@@ -57,6 +24,8 @@ int         get_map(t_mlx_stuff *stuff, int nb)
         ret = create_map(stuff, files[nb]);
     if (ret != 1)
         return (0);
+    stuff->rot_offset.x = 0.002;
+	stuff->rot_offset.y = 0.002;
     map->tile = 0.8 * fmin(stuff->w, stuff->h) / (sqrt(2) * fmax(map->rows, map->col));
     return (1);
 }
@@ -88,6 +57,7 @@ t_vox			mlx_project(t_mlx_stuff *stuff, t_vox p)
 	return (t_a);
 }
 
+/*
 t_RGB color_converter (int hexValue)
 {
     t_RGB rgbColor;
@@ -96,8 +66,55 @@ t_RGB color_converter (int hexValue)
     rgbColor.b = (hexValue & 0x0000ff);//((hexValue) & 0xFF) / 255.0; // Extract the BB byte
     return (rgbColor); 
 }
+*/
 
-void draw_line(t_mlx_stuff *stuff, SDL_Renderer *renderer, int x1, int y1, int x2, int y2)
+static int	ft_abs(int n)
+{
+	return ((n > 0) ? n : (n * -1));
+}
+
+uint32_t    make_color(int hexValue)
+{
+    uint32_t ret;
+    ret = hexValue >> 16; // r
+    ret <<= 16;
+    ret |= (hexValue & 0x00ff00) >> 8; // g
+    ret <<= 16;
+    ret |= (hexValue & 0x0000ff); //b
+    ret |= 255; // a
+    /*
+    rgbColor.r = hexValue >> 16;//((hexValue >> 16) & 0xFF) / 255.0; // Extract the RR byte
+    rgbColor.g = (hexValue & 0x00ff00) >> 8;//((hexValue >> 8) & 0xFF) / 255.0; // Extract the GG byte
+    rgbColor.b = (hexValue & 0x0000ff);//((hexValue) & 0xFF) / 255.0; // Extract the BB byte
+    */
+    return (ret);
+}
+
+void		dda(t_mlx_stuff *mlx, uint32_t *pixels, t_vox *start, t_vox *end, int color)
+{
+	int	dx;
+	int	dy;
+	int	steps;
+	int	i;
+
+	dx = (int)end->x - (int)start->x;
+	dy = (int)end->y - (int)start->y;
+	steps = ft_abs(dx) > ft_abs(dy) ? ft_abs(dx) : ft_abs(dy);
+	i = 0;
+	while (i <= steps)
+	{
+		if (i > 0 && i < steps)
+        {
+            if (start->x >= 0 && start->x < mlx->w && start->y >= 0 && start->y < mlx->h)
+			    pixels[mlx->w * (int)start->y + (int)start->x] = make_color(color);
+        }
+        start->x += dx / (float)steps;
+		start->y += dy / (float)steps;
+		i++;
+	}
+}
+
+void draw_line(t_mlx_stuff *stuff, uint32_t *pixels, int x1, int y1, int x2, int y2)
 {
     t_map *map = &stuff->map;
     t_vox *a;
@@ -109,18 +126,35 @@ void draw_line(t_mlx_stuff *stuff, SDL_Renderer *renderer, int x1, int y1, int x
     b = &((map->v)[map->col * y2 + x2]);
     p1 = mlx_project(stuff, (map->v)[map->col * y1 + x1]);
     p2 = mlx_project(stuff, (map->v)[map->col * y2 + x2]);
-    t_RGB c = color_converter((a->z != b->z) ? 14358738 - ((fmax(a->z, b->z) - fmin(a->z, b->z)) * 150) : a->c);
-    SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 255);
-    SDL_RenderDrawLine(renderer, (int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y);
+    p1 = p1;
+    p2 = p2;
+    int color = (a->z != b->z) ? 14358738 - ((fmax(a->z, b->z) - fmin(a->z, b->z)) * 150) : a->c;
+    dda(stuff, pixels, &p1, &p2, color);
+    //SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 255);
+    //SDL_RenderDrawLine(renderer, (int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y);
     //SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+}
+
+void    init_mlx_stuff(t_mlx_stuff *stuff, int h, int w)
+{
+    stuff->rot_offset.x = 0.002;
+	stuff->rot_offset.y = 0.002;
+    stuff->scale = SCALE;
+    stuff->map.v = NULL;
+    stuff->h = h;
+    stuff->w = w;
+   
 }
 
 int main(int argc, char *argv[])
 {
     SDL_Event       event;
+    SDL_Surface     *surface;
+    SDL_Texture     *texture;
     SDL_Window      *window;
     SDL_Renderer    *renderer;
     t_mlx_stuff     stuff;
+
     int done = 0, w = 1280, h = 720;
     // mandatory at least on switch, else gfx is not properly closed
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
@@ -148,6 +182,21 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    surface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
+    if (!surface)
+    {
+        SDL_Log("SDL_CreateRGBSurface: %s\n", SDL_GetError());
+        SDL_Quit();
+        return (0);
+    }
+
+    texture = SDL_CreateTextureFromSurface(renderer, surface);
+    if (!texture)
+    {
+        SDL_Log("SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
+        SDL_Quit();
+        return (0);
+    }
     // open CONTROLLER_PLAYER_1 and CONTROLLER_PLAYER_2
     // when railed, both joycons are mapped to joystick #0,
     // else joycons are individually mapped to joystick #0, joystick #1, ...
@@ -160,16 +209,13 @@ int main(int argc, char *argv[])
         }
     }
     int chosen_map = 0;
-    stuff.rot_offset.x = 0.002;
-	stuff.rot_offset.y = 0.002;
-    stuff.scale = SCALE;
-    stuff.map.v = NULL;
-    stuff.h = h;
-    stuff.w = w;
+    init_mlx_stuff(&stuff, h, w);
     if (!(get_map(&stuff, chosen_map)))
         done = 1;
     t_map *map = &stuff.map;
-    
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
     while (!done) {
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -217,6 +263,7 @@ int main(int argc, char *argv[])
                     // https://github.com/devkitPro/SDL/blob/switch-sdl2/src/joystick/switch/SDL_sysjoystick.c#L52
                     // seek for joystick #0
                     if (event.jbutton.which == 0) {
+                        /*
                         if (event.jbutton.button == 0) {
                             // (A) button down, switch resolution
                             if(w == 1920) {
@@ -228,7 +275,8 @@ int main(int argc, char *argv[])
                             stuff.h = h;
                             stuff.w = w;
                         }
-                        else if (event.jbutton.button == 10) {
+                        */
+                        if (event.jbutton.button == 10) {
                             // (+) button down
                             done = 1;
                         }
@@ -239,6 +287,10 @@ int main(int argc, char *argv[])
                             {
                                 if (stuff.map.v)
                                     free(stuff.map.v);
+                                SDL_FreeSurface(surface);
+                                surface = nullptr;
+                                SDL_DestroyTexture(texture);
+                                texture = nullptr;
                                 SDL_DestroyRenderer(renderer);
                                 SDL_DestroyWindow(window);
                                 SDL_Quit();
@@ -286,30 +338,32 @@ int main(int argc, char *argv[])
                     break;
             }
         }
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-
-        // fill window bounds
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_GetWindowSize(window, &w, &h);
-        SDL_Rect f = {0, 0, w, h};
-        SDL_RenderFillRect(renderer, &f);
+        uint32_t *pixels = (uint32_t *)surface->pixels;
+        memset(pixels, 0, w * h * sizeof(uint32_t));
+        
         for (int my = 0; my < map->rows; my++)
         {
             for (int mx = 0; mx < map->col; mx++)
             {
                 if (mx - 1 >= 0)
-                    draw_line(&stuff, renderer, mx, my, mx - 1, my);
+                    draw_line(&stuff, pixels, mx, my, mx - 1, my);
                 if (my - 1 >= 0)
-                    draw_line(&stuff, renderer, mx, my, mx, my - 1);
+                    draw_line(&stuff, pixels, mx, my, mx, my - 1);
                 
             }
         }
+        SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, nullptr, nullptr);
         SDL_RenderPresent(renderer);
     }
     if (stuff.map.v)
         free(stuff.map.v);
+    SDL_DestroyTexture(texture);
+    texture = nullptr;
+    SDL_FreeSurface(surface);
+    surface = nullptr;
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

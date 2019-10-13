@@ -26,6 +26,18 @@
 # define WHITE ((int)16777215)
 # define SCALE ((double)-0.12)
 
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+    # define RMASK ((uint32_t)0xff000000)
+    # define GMASK ((uint32_t)0x00ff0000)
+    # define BMASK ((uint32_t)0x0000ff00)
+    # define AMASK ((uint32_t)0x000000ff)
+#else
+     # define RMASK ((uint32_t)0x000000ff)
+     # define GMASK ((uint32_t)0x0000ff00)
+     # define BMASK ((uint32_t)0x00ff0000)
+     # define AMASK ((uint32_t)0xff000000)
+#endif
+
 typedef struct	s_vox
 {
 	double		x;
@@ -56,9 +68,9 @@ typedef struct	s_mlx_stuff
 
 typedef struct s_RGB
 {
-        double r;
-        double g;
-        double b;
+        int		r;
+        int		g;
+        int		b;
 } t_RGB;
 
 int			create_map(t_mlx_stuff *stuff, std::string name);
