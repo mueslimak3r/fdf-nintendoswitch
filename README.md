@@ -1,6 +1,7 @@
 # fdf-nintendoswitch
 Nintendo Switch port of my 42 wireframe graphics project
 
+<img src="https://i.imgur.com/5fQHdst.jpg"/>
 
 # how to use
 
